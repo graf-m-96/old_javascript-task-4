@@ -38,7 +38,7 @@ function copyFields(collection, copyOfCollection) {
         copyOfCollection.fields = collection.fields.slice();
     }
     // queriesForEnd
-    // содержит объекты, но это не мешает, так как мы объекты не изменяем, а
+    // содержит объекты, но это не мешает, так как мы объекты не изменяем, а добавляем
     copyOfCollection.queriesForEnd = collection.queriesForEnd.slice();
 
     return copyOfCollection;
@@ -129,7 +129,7 @@ exports.query = function (collection) {
 /**
  * Выбор полей
  * @params {...String}
- * @returns {Function} - ищет пересечение полей и записывает их в поле fields (СТРУКТУРА!!!)
+ * @returns {Function} - ищет пересечение полей и записывает их в поле fields
  */
 exports.select = function () {
     var args = Array.from(arguments);
@@ -170,6 +170,25 @@ exports.filterIn = function (property, values) {
 };
 
 
+function sillySort(collection, orderToFactor, property, order) {
+    var i = 0;
+    var n = collection.length - 1;
+    var temp;
+    while (i < n) {
+        if (orderToFactor[order] * collection[i][property] >
+            orderToFactor[order] * collection[i + 1][property]) {
+            temp = collection[i + 1];
+            collection[i + 1] = collection[i];
+            collection[i] = temp;
+            i = 0;
+        } else {
+            i++;
+        }
+    }
+
+    return collection;
+}
+
 /**
  * Сортировка коллекции по полю
  * @param {String} property – Свойство для фильтрации
@@ -182,18 +201,22 @@ exports.sortBy = function (property, order) {
 
     return function (collection) {
         collection = copyCollection(collection);
-        collection.sort(function (thisRecord, otherRecord) {
-            if (orderToFactor[order] * thisRecord[property] < orderToFactor[order] *
-                                                             otherRecord[property]) {
-                return -1;
-            }
-            if (orderToFactor[order] * thisRecord[property] > orderToFactor[order] *
-                                                              otherRecord[property]) {
-                return 1;
-            }
+        collection = sillySort(collection, orderToFactor, property, order);
 
-            return 0;
-        });
+        /*
+         collection.sort(function (thisRecord, otherRecord) {
+         if (orderToFactor[order] * thisRecord[property] < orderToFactor[order] *
+         otherRecord[property]) {
+         return -1;
+         }
+         if (orderToFactor[order] * thisRecord[property] > orderToFactor[order] *
+         otherRecord[property]) {
+         return 1;
+         }
+
+         return 0;
+         });
+         */
 
         return collection;
     };
@@ -204,7 +227,7 @@ exports.sortBy = function (property, order) {
  * Форматирование поля
  * @param {String} property – Свойство для фильтрации
  * @param {Function} formatter – Функция для форматирования
- * @returns {Function} - добавляет в поле queriesForEnd (СТРУКТУРА!!!) функцию, которая должна
+ * @returns {Function} - добавляет в поле queriesForEnd функцию, которая должна
  * выполняться в конце
  */
 exports.format = function (property, formatter) {
@@ -231,7 +254,7 @@ exports.format = function (property, formatter) {
 /**
  * Ограничение количества элементов в коллекции
  * @param {Number} count – Максимальное количество элементов
- * @returns {Function} - добавляет в поле queriesForEnd (СТРУКТУРА!!!) функцию, которая должна
+ * @returns {Function} - добавляет в поле queriesForEnd функцию, которая должна
  * выполняться в конце
  */
 exports.limit = function (count) {
