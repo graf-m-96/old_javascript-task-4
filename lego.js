@@ -141,15 +141,14 @@ exports.filterIn = function (property, values) {
 };
 
 
-/*
-Сначала протестируем со встроенной sort.
-P.S. https://habrahabr.ru/post/265079/ (судя по примеру должно не зайти)
+/**
  * Глупая сортировка (Нам нужна любая УСТОЙЧИВАЯ сортировка)
  * @param {Array} collection - исходная коллекция
  * @param {Object} orderToFactor - отображение порядка в коэффициент
  * @param {String} property - Свойство для фильтрации
  * @param {String} order - Порядок сортировки (asc - по возрастанию; desc – по убыванию)
  * @returns {Array} collection - отсортированная коллекция
+ */
 function sillySort(collection, orderToFactor, property, order) {
     var index = 0;
     while (index < collection.length - 1) {
@@ -166,7 +165,6 @@ function sillySort(collection, orderToFactor, property, order) {
 
     return collection;
 }
-*/
 
 
 /**
@@ -185,20 +183,7 @@ exports.sortBy = function (property, order) {
             fields: notebook.fields,
             queriesForEnd: notebook.queriesForEnd
         };
-        // notebook.collection = sillySort(notebook.collection, orderToFactor, property, order);
-        notebook.collection.sort(function (thisRecord, otherRecord) {
-            if (orderToFactor[order] * thisRecord[property] < orderToFactor[order] *
-                                                              otherRecord[property]) {
-                return -1;
-            }
-            if (orderToFactor[order] * thisRecord[property] > orderToFactor[order] *
-                                                              otherRecord[property]) {
-                return 1;
-            }
-
-            return 0;
-        });
-
+        notebook.collection = sillySort(notebook.collection, orderToFactor, property, order);
 
         return notebook;
     };
