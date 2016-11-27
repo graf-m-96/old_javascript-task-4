@@ -82,14 +82,15 @@ function doImmediatelyRunningQueries(collection, queries) {
 function doQueriesForEnd(collection) {
     collection = copyCollection(collection);
     // удаляем поля, которых не было в select
-    collection.fields = collection.fields === undefined ? [] : collection.fields;
-    collection.forEach(function (record) {
-        Object.keys(record).forEach(function (field) {
-            if (collection.fields.indexOf(field) === -1) {
-                delete record[field];
-            }
+    if (collection.fields !== undefined) {
+        collection.forEach(function (record) {
+            Object.keys(record).forEach(function (field) {
+                if (collection.fields.indexOf(field) === -1) {
+                    delete record[field];
+                }
+            });
         });
-    });
+    }
     collection.queriesForEnd.forEach(function (query) {
         collection = query(collection);
     });
@@ -169,25 +170,6 @@ exports.filterIn = function (property, values) {
 };
 
 
-function sillySort(collection, orderToFactor, property, order) {
-    var i = 0;
-    var n = collection.length - 1;
-    var temp;
-    while (i < n) {
-        if (orderToFactor[order] * collection[i][property] >
-                orderToFactor[order] * collection[i + 1][property]) {
-            temp = collection[i + 1];
-            collection[i + 1] = collection[i];
-            collection[i] = temp;
-            i = 0;
-        } else {
-            i++;
-        }
-    }
-
-    return collection;
-}
-
 /**
  * Сортировка коллекции по полю
  * @param {String} property – Свойство для фильтрации
@@ -200,9 +182,6 @@ exports.sortBy = function (property, order) {
 
     return function (collection) {
         collection = copyCollection(collection);
-        collection = sillySort(collection, orderToFactor, property, order);
-
-        /*
         collection.sort(function (thisRecord, otherRecord) {
             if (orderToFactor[order] * thisRecord[property] < orderToFactor[order] *
                                                              otherRecord[property]) {
@@ -215,7 +194,6 @@ exports.sortBy = function (property, order) {
 
             return 0;
         });
-        */
 
         return collection;
     };
