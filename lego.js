@@ -62,7 +62,7 @@ function copyCollection(collection) {
  * @param {Array} collection - исходная коллекция
  * @param {Array} queries - запросы
  * @returns {Array} collection - коллекция, которая прошла "немедленные" запросы, кроме запросов
- * типа формат
+ * типа format и limit
  */
 function doImmediatelyRunningQueries(collection, queries) {
     // мы во всех запросах делаем копию, так что тут она не нужна
@@ -82,6 +82,7 @@ function doImmediatelyRunningQueries(collection, queries) {
 function doQueriesForEnd(collection) {
     collection = copyCollection(collection);
     // удаляем поля, которых не было в select
+    collection.fields = collection.fields === undefined ? [] : collection.fields;
     collection.forEach(function (record) {
         Object.keys(record).forEach(function (field) {
             if (collection.fields.indexOf(field) === -1) {
@@ -110,7 +111,7 @@ exports.query = function (collection) {
     Иначе непонятно, как сортировать объекты, да и просто жесть будет
     Поэтому используем поверхностное копирование, а не глубокое
      */
-    collection = collection.slice();
+    collection = copyArray(collection, []);
     collection.fields = undefined;
     collection.queriesForEnd = [];
     var queries = Array.from(arguments);
@@ -210,8 +211,8 @@ exports.format = function (property, formatter) {
 
     return function (collection) {
         collection = copyCollection(collection);
-        collection.queriesForEnd.push(function (changedCollection) {
-            changedCollection = copyCollection(changedCollection);
+        collection.queriesForEnd.push(function (initialCollection) {
+            var changedCollection = copyCollection(initialCollection);
             changedCollection.forEach(function (record) {
                 if (record.hasOwnProperty(property)) {
                     record[property] = formatter(record[property]);
@@ -237,10 +238,11 @@ exports.limit = function (count) {
 
     return function (collection) {
         collection = copyCollection(collection);
-        collection.queriesForEnd.push(function (changedCollection) {
-            changedCollection = copyCollection(changedCollection);
+        collection.queriesForEnd.push(function (initialCollection) {
+            var changedCollection = copyCollection(initialCollection);
+            changedCollection = changedCollection.slice(0, count);
 
-            return changedCollection.slice(0, count);
+            return copyFields(initialCollection, changedCollection);
         });
 
         return collection;
