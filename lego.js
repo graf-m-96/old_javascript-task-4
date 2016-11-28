@@ -39,7 +39,7 @@ function doImmediatelyRunningQueries(notebook, queries) {
 
 /**
  * @param {Object} notebook - {collection, fields, queriesForEnd}
- * @returns {Object} notebook - после выполнения запросов, которые выполняются  конце:
+ * @returns {Object} notebook - после выполнения запросов, которые выполняются в конце:
  * удаление полей, не входящих в select, format, limit
  */
 function doQueriesForEnd(notebook) {
@@ -103,6 +103,9 @@ exports.select = function () {
     var args = Array.from(arguments);
 
     return function (notebook) {
+        if (args.length === 0) {
+            return notebook;
+        }
         // копирование коллекции не нужно
         if (notebook.fields === undefined) {
             notebook.fields = args;
