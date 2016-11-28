@@ -52,7 +52,7 @@ function doQueriesForEnd(notebook) {
     if (notebook.fields !== undefined) {
         notebook.collection.forEach(function (record) {
             Object.keys(record).forEach(function (field) {
-                if (notebook.fields.indexOf(field) === -1) {
+                if (record.hasOwnProperty(field) && notebook.fields.indexOf(field) === -1) {
                     delete record[field];
                 }
             });
@@ -103,9 +103,6 @@ exports.select = function () {
     var args = Array.from(arguments);
 
     return function (notebook) {
-        if (args.length === 0) {
-            return notebook;
-        }
         // копирование коллекции не нужно
         if (notebook.fields === undefined) {
             notebook.fields = args;
