@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализованы методы or и and
  */
-exports.isStar = true;
+exports.isStar = false;
 
 
 /**
@@ -52,7 +52,7 @@ function doQueriesForEnd(notebook) {
     if (notebook.fields !== undefined) {
         notebook.collection.forEach(function (record) {
             Object.keys(record).forEach(function (field) {
-                if (record.hasOwnProperty(field) && notebook.fields.indexOf(field) === -1) {
+                if (notebook.fields.indexOf(field) === -1) {
                     delete record[field];
                 }
             });
@@ -73,22 +73,14 @@ function doQueriesForEnd(notebook) {
  * @returns {Array} collection - коллекция после запросов
  */
 exports.query = function (collection) {
-    Object.keys(collection).forEach(function (record) {
-        Object.keys(record).forEach(function (field) {
-            if (typeof record[field] === 'object') {
-                throw new Error('Всё-таки есть :(');
-            }
-        });
-    });
 
     /*
     Допустим, что запись может иметь только примитивное значение
     Иначе непонятно, как сортировать объекты, да и просто жесть будет
     Поэтому используем поверхностное копирование, а не глубокое
      */
-    collection = copyCollection(collection);
     var notebook = {
-        collection: collection,
+        collection: copyCollection(collection),
         fields: undefined,
         queriesForEnd: []
     };
@@ -160,7 +152,7 @@ function sillySort(collection, orderToFactor, property, order) {
     var index = 0;
     while (index < collection.length - 1) {
         if (orderToFactor[order] * collection[index][property] >
-            orderToFactor[order] * collection[index + 1][property]) {
+                orderToFactor[order] * collection[index + 1][property]) {
             var temp = collection[index + 1];
             collection[index + 1] = collection[index];
             collection[index] = temp;
@@ -208,11 +200,7 @@ exports.format = function (property, formatter) {
     console.info(property, formatter);
 
     return function (notebookForAddFunction) {
-        notebookForAddFunction = {
-            collection: copyCollection(notebookForAddFunction.collection),
-            fields: notebookForAddFunction.fields,
-            queriesForEnd: notebookForAddFunction.queriesForEnd
-        };
+
         notebookForAddFunction.queriesForEnd.push(function (notebook) {
             notebook = {
                 collection: copyCollection(notebook.collection),
@@ -243,11 +231,7 @@ exports.limit = function (count) {
     console.info(count);
 
     return function (notebookForAddFunction) {
-        notebookForAddFunction = {
-            collection: copyCollection(notebookForAddFunction.collection),
-            fields: notebookForAddFunction.fields,
-            queriesForEnd: notebookForAddFunction.queriesForEnd
-        };
+
         notebookForAddFunction.queriesForEnd.push(function (notebook) {
             notebook = {
                 collection: copyCollection(notebook.collection),
