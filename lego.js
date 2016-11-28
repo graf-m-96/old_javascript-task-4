@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализованы методы or и and
  */
-exports.isStar = false;
+exports.isStar = true;
 
 
 /**
@@ -28,7 +28,6 @@ function copyCollection(collection) {
  * кроме запросов типа format, limit и удаления полей, не входящих в select
  */
 function doImmediatelyRunningQueries(notebook, queries) {
-    // мы во всех запросах делаем копию, так что тут она не нужна
     queries.forEach(function (query) {
         notebook = query(notebook);
     });
@@ -38,17 +37,16 @@ function doImmediatelyRunningQueries(notebook, queries) {
 
 
 /**
+ *
  * @param {Object} notebook - {collection, fields, queriesForEnd}
- * @returns {Object} notebook - после выполнения запросов, которые выполняются в конце:
- * удаление полей, не входящих в select, format, limit
+ * @returns {Object} notebook - после удаления полей, которые не вошли в select
  */
-function doQueriesForEnd(notebook) {
+function deleteFields(notebook) {
     notebook = {
         collection: copyCollection(notebook.collection),
         fields: notebook.fields,
         queriesForEnd: notebook.queriesForEnd
     };
-    // удаляем поля, которых не было в select
     if (notebook.fields !== undefined) {
         notebook.collection.forEach(function (record) {
             Object.keys(record).forEach(function (field) {
@@ -58,6 +56,17 @@ function doQueriesForEnd(notebook) {
             });
         });
     }
+
+    return notebook;
+}
+
+/**
+ * @param {Object} notebook - {collection, fields, queriesForEnd}
+ * @returns {Object} notebook - после выполнения запросов, которые выполняются в конце:
+ * удаление полей, не входящих в select, format, limit
+ */
+function doQueriesForEnd(notebook) {
+    notebook = deleteFields(notebook);
     notebook.queriesForEnd.forEach(function (query) {
         notebook = query(notebook);
     });
@@ -143,16 +152,14 @@ exports.filterIn = function (property, values) {
 /**
  * Глупая сортировка (Нам нужна любая УСТОЙЧИВАЯ сортировка)
  * @param {Array} collection - исходная коллекция
- * @param {Object} orderToFactor - отображение порядка в коэффициент
  * @param {String} property - Свойство для фильтрации
- * @param {String} order - Порядок сортировки (asc - по возрастанию; desc – по убыванию)
+ * @param {Boolean} needReverse - нужно ли поменять порядок в коллекции
  * @returns {Array} collection - отсортированная коллекция
  */
-function sillySort(collection, orderToFactor, property, order) {
+function sillySortInAscending(collection, property, needReverse) {
     var index = 0;
     while (index < collection.length - 1) {
-        if (orderToFactor[order] * collection[index][property] >
-                orderToFactor[order] * collection[index + 1][property]) {
+        if (collection[index][property] > collection[index + 1][property]) {
             var temp = collection[index + 1];
             collection[index + 1] = collection[index];
             collection[index] = temp;
@@ -160,6 +167,9 @@ function sillySort(collection, orderToFactor, property, order) {
         } else {
             index++;
         }
+    }
+    if (needReverse) {
+        collection.reverse();
     }
 
     return collection;
@@ -174,7 +184,6 @@ function sillySort(collection, orderToFactor, property, order) {
  */
 exports.sortBy = function (property, order) {
     console.info(property, order);
-    var orderToFactor = { asc: 1, desc: -1 };
 
     return function (notebook) {
         notebook = {
@@ -182,7 +191,7 @@ exports.sortBy = function (property, order) {
             fields: notebook.fields,
             queriesForEnd: notebook.queriesForEnd
         };
-        notebook.collection = sillySort(notebook.collection, orderToFactor, property, order);
+        notebook.collection = sillySortInAscending(notebook.collection, property, order === 'desc');
 
         return notebook;
     };
