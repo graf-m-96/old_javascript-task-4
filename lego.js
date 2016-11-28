@@ -49,7 +49,7 @@ function doQueriesForEnd(notebook) {
         queriesForEnd: notebook.queriesForEnd
     };
     // удаляем поля, которых не было в select
-    if (notebook.fields !== undefined && notebook.fields.length !== 0) {
+    if (notebook.fields !== undefined) {
         notebook.collection.forEach(function (record) {
             Object.keys(record).forEach(function (field) {
                 if (record.hasOwnProperty(field) && notebook.fields.indexOf(field) === -1) {
@@ -133,7 +133,7 @@ exports.filterIn = function (property, values) {
             queriesForEnd: notebook.queriesForEnd
         };
         notebook.collection = notebook.collection.filter(function (record) {
-            return values.indexOf(record[property]) !== -1;
+            return record.hasOwnProperty(property) && values.indexOf(record[property]) !== -1;
         });
 
         return notebook;
