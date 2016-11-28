@@ -257,11 +257,11 @@ exports.limit = function (count) {
 };
 
 
-/**
+/*
  * @param {Object} thisObj - первый объект
  * @param {Object} otherObj - второй объект
  * @returns {boolean} - равны ли объекты по поверхностному сравнению
- */
+ *
 function objectEquals(thisObj, otherObj) {
     if (Object.keys(thisObj).length !== Object.keys(otherObj).length) {
         return false;
@@ -275,6 +275,7 @@ function objectEquals(thisObj, otherObj) {
 
     return true;
 }
+*/
 
 
 /**
@@ -287,7 +288,7 @@ function union(commonCollection, collection) {
     collection.forEach(function (thisRecord) {
         var commonCollectionHaveThisRecord = false;
         commonCollection.forEach(function (otherRecord) {
-            if (objectEquals(thisRecord, otherRecord)) {
+            if (thisRecord === otherRecord) {
                 commonCollectionHaveThisRecord = true;
             }
         });
@@ -312,11 +313,6 @@ if (exports.isStar) {
         var filters = Array.from(arguments);
 
         return function (notebook) {
-            notebook = {
-                collection: copyCollection(notebook.collection),
-                fields: notebook.fields,
-                queriesForEnd: notebook.queriesForEnd
-            };
             var unionNotebook = {
                 collection: [],
                 fields: notebook.fields,
@@ -343,11 +339,6 @@ if (exports.isStar) {
         var filters = Array.from(arguments);
 
         return function (notebook) {
-            notebook = {
-                collection: copyCollection(notebook.collection),
-                fields: notebook.fields,
-                queriesForEnd: notebook.queriesForEnd
-            };
             filters.forEach(function (filter) {
                 notebook = filter(notebook);
             });
