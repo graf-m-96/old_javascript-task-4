@@ -49,7 +49,7 @@ function doQueriesForEnd(notebook) {
         queriesForEnd: notebook.queriesForEnd
     };
     // удаляем поля, которых не было в select
-    if (notebook.fields !== undefined) {
+    if (notebook.fields !== undefined && notebook.fields.length !== 0) {
         notebook.collection.forEach(function (record) {
             Object.keys(record).forEach(function (field) {
                 if (record.hasOwnProperty(field) && notebook.fields.indexOf(field) === -1) {
