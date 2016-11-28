@@ -73,6 +73,13 @@ function doQueriesForEnd(notebook) {
  * @returns {Array} collection - коллекция после запросов
  */
 exports.query = function (collection) {
+    Object.keys(collection).forEach(function (record) {
+        Object.keys(record).forEach(function (field) {
+            if (typeof record[field] === 'object') {
+                throw new Error('Всё-таки есть :(');
+            }
+        });
+    });
 
     /*
     Допустим, что запись может иметь только примитивное значение
