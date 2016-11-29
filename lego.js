@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализованы методы or и and
  */
-exports.isStar = false;
+exports.isStar = true;
 
 
 /**
@@ -269,6 +269,11 @@ if (exports.isStar) {
                 var currentNotebook = filter(copyInitialNotebook);
                 unionNotebook.collection = union(unionNotebook.collection,
                                                  currentNotebook.collection);
+            });
+
+
+            unionNotebook.collection = notebook.collection.filter(function (record) {
+                return unionNotebook.collection.indexOf(record) !== -1;
             });
 
             return unionNotebook;
