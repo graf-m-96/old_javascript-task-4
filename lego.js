@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализованы методы or и and
  */
-exports.isStar = true;
+exports.isStar = false;
 
 
 /**
@@ -256,7 +256,7 @@ if (exports.isStar) {
 
         return function (notebook) {
             var unionNotebook = {
-                collection: filters.length !== 0 ? [] : notebook.collection.slice(),
+                collection: [],
                 fields: notebook.fields,
                 queriesForEnd: notebook.queriesForEnd
             };
