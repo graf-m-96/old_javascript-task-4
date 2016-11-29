@@ -256,7 +256,7 @@ if (exports.isStar) {
 
         return function (notebook) {
             var unionNotebook = {
-                collection: [],
+                collection: filters.length !== 0 ? [] : notebook.collection.slice(),
                 fields: notebook.fields,
                 queriesForEnd: notebook.queriesForEnd
             };
