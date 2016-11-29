@@ -32,7 +32,7 @@ function deleteFields(notebook) {
     if (notebook.fields !== undefined) {
         notebook.collection = notebook.collection.map(function (record) {
             var copyRecord = Object.assign({}, record);
-            Object.keys(record).forEach(function (field) {
+            Object.keys(copyRecord).forEach(function (field) {
                 if (notebook.fields.indexOf(field) === -1) {
                     delete copyRecord[field];
                 }
@@ -255,14 +255,18 @@ if (exports.isStar) {
         var filters = Array.from(arguments);
 
         return function (notebook) {
-            notebook.collection = notebook.collection.slice();
             var unionNotebook = {
                 collection: [],
                 fields: notebook.fields,
                 queriesForEnd: notebook.queriesForEnd
             };
             filters.forEach(function (filter) {
-                var currentNotebook = filter(notebook);
+                var copyInitialNotebook = {
+                    collection: notebook.collection.slice(),
+                    fields: notebook.fields,
+                    queriesForEnd: notebook.queriesForEnd
+                };
+                var currentNotebook = filter(copyInitialNotebook);
                 unionNotebook.collection = union(unionNotebook.collection,
                                                  currentNotebook.collection);
             });
