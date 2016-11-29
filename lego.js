@@ -8,19 +8,6 @@ exports.isStar = true;
 
 
 /**
- * @param {Array} collection - исходная коллекция
- * @returns {Array} - коллекция, полученная поверхностным копированием
- */
-function copyCollection(collection) {
-
-    return collection.map(function (record) {
-
-        return Object.assign({}, record);
-    });
-}
-
-
-/**
  * Выполнение запросов, которые выполняются немедленно
  * @param {Object} notebook - {collection, fields, queriesForEnd}
  * @param {Array} queries - запросы
@@ -42,18 +29,16 @@ function doImmediatelyRunningQueries(notebook, queries) {
  * @returns {Object} notebook - после удаления полей, которые не вошли в select
  */
 function deleteFields(notebook) {
-    notebook = {
-        collection: copyCollection(notebook.collection),
-        fields: notebook.fields,
-        queriesForEnd: notebook.queriesForEnd
-    };
     if (notebook.fields !== undefined) {
-        notebook.collection.forEach(function (record) {
+        notebook.collection = notebook.collection.map(function (record) {
+            var copyRecord = Object.assign({}, record);
             Object.keys(record).forEach(function (field) {
                 if (notebook.fields.indexOf(field) === -1) {
-                    delete record[field];
+                    delete copyRecord[field];
                 }
             });
+
+            return copyRecord;
         });
     }
 
@@ -83,18 +68,12 @@ function doQueriesForEnd(notebook) {
  */
 exports.query = function (collection) {
 
-    /*
-    Допустим, что запись может иметь только примитивное значение
-    Иначе непонятно, как сортировать объекты, да и просто жесть будет
-    Поэтому используем поверхностное копирование, а не глубокое
-     */
     var notebook = {
-        collection: copyCollection(collection),
+        collection: collection,
         fields: undefined,
         queriesForEnd: []
     };
-    var queries = Array.from(arguments);
-    queries.splice(0, 1);
+    var queries = Array.from(arguments).slice(1);
     notebook = doImmediatelyRunningQueries(notebook, queries);
     notebook = doQueriesForEnd(notebook);
 
@@ -111,14 +90,10 @@ exports.select = function () {
     var args = Array.from(arguments);
 
     return function (notebook) {
-        // копирование коллекции не нужно
-        if (notebook.fields === undefined) {
-            notebook.fields = args;
-        } else {
-            notebook.fields = notebook.fields.filter(function (field) {
+        notebook.fields = notebook.fields === undefined ? args : notebook.fields.filter(
+            function (field) {
                 return args.indexOf(field) !== -1;
             });
-        }
 
         return notebook;
     };
@@ -135,11 +110,6 @@ exports.filterIn = function (property, values) {
     console.info(property, values);
 
     return function (notebook) {
-        notebook = {
-            collection: copyCollection(notebook.collection),
-            fields: notebook.fields,
-            queriesForEnd: notebook.queriesForEnd
-        };
         notebook.collection = notebook.collection.filter(function (record) {
             return record.hasOwnProperty(property) && values.indexOf(record[property]) !== -1;
         });
@@ -186,12 +156,8 @@ exports.sortBy = function (property, order) {
     console.info(property, order);
 
     return function (notebook) {
-        notebook = {
-            collection: copyCollection(notebook.collection),
-            fields: notebook.fields,
-            queriesForEnd: notebook.queriesForEnd
-        };
-        notebook.collection = sillySortInAscending(notebook.collection, property, order === 'desc');
+        notebook.collection = sillySortInAscending(notebook.collection.slice(), property,
+                                                   order === 'desc');
 
         return notebook;
     };
@@ -211,15 +177,15 @@ exports.format = function (property, formatter) {
     return function (notebookForAddFunction) {
 
         notebookForAddFunction.queriesForEnd.push(function (notebook) {
-            notebook = {
-                collection: copyCollection(notebook.collection),
-                fields: notebook.fields,
-                queriesForEnd: notebook.queriesForEnd
-            };
-            notebook.collection.forEach(function (record) {
+            notebook.collection = notebook.collection.map(function (record) {
                 if (record.hasOwnProperty(property)) {
-                    record[property] = formatter(record[property]);
+                    var copyRecord = Object.assign({}, record);
+                    copyRecord[property] = formatter(record[property]);
+
+                    return copyRecord;
                 }
+
+                return record;
             });
 
             return notebook;
@@ -242,11 +208,6 @@ exports.limit = function (count) {
     return function (notebookForAddFunction) {
 
         notebookForAddFunction.queriesForEnd.push(function (notebook) {
-            notebook = {
-                collection: copyCollection(notebook.collection),
-                fields: notebook.fields,
-                queriesForEnd: notebook.queriesForEnd
-            };
             notebook.collection = notebook.collection.slice(0, count);
 
             return notebook;
@@ -255,27 +216,6 @@ exports.limit = function (count) {
         return notebookForAddFunction;
     };
 };
-
-
-/*
- * @param {Object} thisObj - первый объект
- * @param {Object} otherObj - второй объект
- * @returns {boolean} - равны ли объекты по поверхностному сравнению
- *
-function objectEquals(thisObj, otherObj) {
-    if (Object.keys(thisObj).length !== Object.keys(otherObj).length) {
-        return false;
-    }
-    for (var i = 0; i < Object.keys(thisObj).length; i++) {
-        var key = Object.keys(thisObj)[i];
-        if (thisObj[key] !== otherObj[key]) {
-            return false;
-        }
-    }
-
-    return true;
-}
-*/
 
 
 /**
@@ -288,6 +228,8 @@ function union(commonCollection, collection) {
     collection.forEach(function (thisRecord) {
         var commonCollectionHaveThisRecord = false;
         commonCollection.forEach(function (otherRecord) {
+            // так как мы элементы меняем только в format и после удаления полей, то можно
+            // сравнивать по ссылкам
             if (thisRecord === otherRecord) {
                 commonCollectionHaveThisRecord = true;
             }
@@ -313,6 +255,7 @@ if (exports.isStar) {
         var filters = Array.from(arguments);
 
         return function (notebook) {
+            notebook.collection = notebook.collection.slice();
             var unionNotebook = {
                 collection: [],
                 fields: notebook.fields,
@@ -339,11 +282,16 @@ if (exports.isStar) {
         var filters = Array.from(arguments);
 
         return function (notebook) {
+            var intersectionNotebook = {
+                collection: notebook.collection.slice(),
+                fields: notebook.fields,
+                queriesForEnd: notebook.queriesForEnd
+            };
             filters.forEach(function (filter) {
-                notebook = filter(notebook);
+                intersectionNotebook = filter(intersectionNotebook);
             });
 
-            return notebook;
+            return intersectionNotebook;
         };
     };
 }
