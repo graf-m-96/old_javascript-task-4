@@ -8,13 +8,12 @@ exports.isStar = true;
 
 
 /**
- * Выполнение запросов, которые выполняются немедленно
+ * Выполняем запросы относительно переданной колекции
  * @param {Object} notebook - {collection, fields, queriesForEnd}
- * @param {Array} queries - запросы
- * @returns {Object} notebook - после выполнения "немедленных" запросов,
- * кроме запросов типа format, limit и удаления полей, не входящих в select
+ * @param {Array} queries
+ * @returns {Object} notebook - после удаления полей, которые не вошли в select
  */
-function doImmediatelyRunningQueries(notebook, queries) {
+function doQueries(notebook, queries) {
     queries.forEach(function (query) {
         notebook = query(notebook);
     });
@@ -24,37 +23,23 @@ function doImmediatelyRunningQueries(notebook, queries) {
 
 
 /**
- *
+ * Создаёт коллекцию, элементы который имеют поля только находящиеся в select
  * @param {Object} notebook - {collection, fields, queriesForEnd}
- * @returns {Object} notebook - после удаления полей, которые не вошли в select
+ * @returns {Object} notebook - {collection, fields, queriesForEnd} после "удалени полей"
  */
 function deleteFields(notebook) {
     if (notebook.fields !== undefined) {
         notebook.collection = notebook.collection.map(function (record) {
-            var copyRecord = Object.assign({}, record);
-            Object.keys(copyRecord).forEach(function (field) {
-                if (notebook.fields.indexOf(field) === -1) {
-                    delete copyRecord[field];
+            var changedRecord = {};
+            notebook.fields.forEach(function (field) {
+                if (record.hasOwnProperty(field)) {
+                    changedRecord[field] = record[field];
                 }
             });
 
-            return copyRecord;
+            return changedRecord;
         });
     }
-
-    return notebook;
-}
-
-/**
- * @param {Object} notebook - {collection, fields, queriesForEnd}
- * @returns {Object} notebook - после выполнения запросов, которые выполняются в конце:
- * удаление полей, не входящих в select, format, limit
- */
-function doQueriesForEnd(notebook) {
-    notebook = deleteFields(notebook);
-    notebook.queriesForEnd.forEach(function (query) {
-        notebook = query(notebook);
-    });
 
     return notebook;
 }
@@ -69,13 +54,16 @@ function doQueriesForEnd(notebook) {
 exports.query = function (collection) {
 
     var notebook = {
-        collection: collection,
-        fields: undefined,
+        collection: collection.slice(),
         queriesForEnd: []
     };
     var queries = Array.from(arguments).slice(1);
-    notebook = doImmediatelyRunningQueries(notebook, queries);
-    notebook = doQueriesForEnd(notebook);
+    // запросы, которые выполняются немедленно
+    notebook = doQueries(notebook, queries);
+    // удаляем поля, которых нет в select
+    notebook = deleteFields(notebook);
+    // выполняем запросы, которые выполняются в конце
+    notebook = doQueries(notebook, notebook.queriesForEnd);
 
     return notebook.collection;
 };
@@ -90,10 +78,11 @@ exports.select = function () {
     var args = Array.from(arguments);
 
     return function (notebook) {
-        notebook.fields = notebook.fields === undefined ? args : notebook.fields.filter(
+        notebook.fields = notebook.fields !== undefined ? notebook.fields.filter(
             function (field) {
                 return args.indexOf(field) !== -1;
-            });
+            })
+            : args;
 
         return notebook;
     };
@@ -219,22 +208,16 @@ exports.limit = function (count) {
 
 
 /**
+ * Объединяет два массива во первый массив
  * @param {Array} commonCollection - общая коллекция
  * @param {Array} collection - коллекция, которую присоединяем к общей
  * @returns {Array} commonCollection - общая коллекция, объединённая с collection
  */
 function union(commonCollection, collection) {
-
     collection.forEach(function (thisRecord) {
-        var commonCollectionHaveThisRecord = false;
-        commonCollection.forEach(function (otherRecord) {
-            // так как мы элементы меняем только в format и после удаления полей, то можно
-            // сравнивать по ссылкам
-            if (thisRecord === otherRecord) {
-                commonCollectionHaveThisRecord = true;
-            }
-        });
-        if (!commonCollectionHaveThisRecord) {
+        if (!commonCollection.some(function (otherRecord) {
+            return thisRecord === otherRecord;
+        })) {
             commonCollection.push(thisRecord);
         }
     });
