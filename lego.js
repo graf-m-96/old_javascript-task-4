@@ -78,7 +78,7 @@ exports.select = function () {
     var args = Array.from(arguments);
 
     return function (notebook) {
-        notebook.fields = notebook.fields !== undefined ? notebook.fields.filter(
+        notebook.fields = notebook.fields ? notebook.fields.filter(
             function (field) {
                 return args.indexOf(field) !== -1;
             })
